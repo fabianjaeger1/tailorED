@@ -2,7 +2,22 @@
 
 import * as React from 'react'
 
+import Image from 'next/image'
+
 import { cn } from '@/lib/utils'
+
+
+function IconTailored({ className, ...props }: React.ComponentProps<typeof Image>) {
+  return (
+      <Image src="/logo.svg"
+      alt="test"
+      className={className}
+      width={100}  // Example width
+      height={100} // Example height
+      {...props} />
+  );
+}
+
 
 function IconNextChat({
   className,
@@ -503,5 +518,6 @@ export {
   IconShare,
   IconUsers,
   IconExternalLink,
-  IconChevronUpDown
+  IconChevronUpDown,
+  IconTailored
 }
