@@ -1,25 +1,29 @@
 'use client'
 
 import React, { useRef, useState } from 'react';
+import { start } from 'repl';
+import { Button } from '@/components/ui/button';
 
-const AudioRecorderPermission = () => {
-  const mediaStream = useRef(null);
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(
-        { audio: true }
-      );
-      mediaStream.current = stream;
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-    }
-  };
-  return (
-    <div>
-      <button onClick={startRecording}>Start Recording</button>
-    </div>
-  );
-};
+// const AudioRecoderButton = () => {
+//   const mediaStream = useRef(null);
+//   const startRecording = async () => {
+//     try {
+//       const stream = await navigator.mediaDevices.getUserMedia(
+//         { audio: true }
+//       );
+//       mediaStream.current = stream;
+//     } catch (error) {
+//       console.error('Error accessing microphone:', error);
+//     }
+//   };
+//   return (
+//     <div>
+//       {/* <button onClick={startRecording}></button> */}
+//       <Button onClick = {startRecording}></Button>
+//     </div>
+//   );
+// };
+
 
 const AudioRecorder = () => {
   const [recordedUrl, setRecordedUrl] = useState('');
@@ -68,8 +72,8 @@ const AudioRecorder = () => {
       <button onClick={stopRecording}>Stop Recording</button>
     </div>
   );
-};
-export default {
-    AudioRecorder;
-    AudioRecorderPermission;
 }
+
+export {AudioRecorder};
+
+// export {AudioRecorder,AudioRecoderButton};

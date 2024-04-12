@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { LectureButton } from "@/components/recording_button"
 import { TalkButton } from "@/components/talkbutton"
 import { GearIcon } from "@radix-ui/react-icons"
+import { AudioRecorder } from "@/components/audio-recorder"
 
 export default async function Dashboard() {
   return (
@@ -42,7 +43,7 @@ export default async function Dashboard() {
                 <PlusIcon className="text-white" />
                 <span>Add new lecture</span>
               </Button> */}
-              
+              {/* <AudioRecoderButton></AudioRecoderButton> */}
               <LectureButton></LectureButton>
               {/* <TalkButton></TalkButton> */}
               <div className="mt-6">
