@@ -6,6 +6,7 @@ import { LectureButton } from "@/components/recording_button"
 import { TalkButton } from "@/components/talkbutton"
 import { GearIcon } from "@radix-ui/react-icons"
 import { AudioRecorder } from "@/components/audio-recorder"
+import { LectureRecordingButton } from "@/components/recording_button"
 
 import { useState } from "react"
 
@@ -32,7 +33,7 @@ export default function Dashboard() {
   const addLecture = () => {
     const newLecture = {
       date: getCurrentDate(),
-      title: "Vectors, Norms, Cross-Product"
+      title: getKeyPoints()
     };
     setLectures([...lectures, newLecture]); // Add the new lecture to the list of lectures
   };
@@ -105,7 +106,9 @@ export default function Dashboard() {
                       <p className="text-gray-600">{lecture.title}</p>
                     </div>
                     <span className="text-gray-400"></span>
+                    <LectureRecordingButton></LectureRecordingButton>
                   </div>
+                  // <ChevronRightIcon className="text-gray-400" />
                 ))}
               </div>
               {/* <div className="mt-6">

@@ -12,97 +12,126 @@ import { AudioRecoder } from './audio-recorder';
 // }
 
 const LectureButton = ({ addLecture }) => {
+  return (
+    <div>
+      <Button variant = 'secondary' className = "mr-5" onClick={addLecture}>Add Lecture</Button>
+      {/* <button onClick={stopRecording} disabled={!isRecording}>Stop Recording</button> */}
+      {/* <button onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</button> */}
+
+    </div>
+  );
+};
+
+
+const LectureRecordingButton = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [audioURL, setAudioURL] = useState('');
+    const [isRecorded, setIsRecorded] = useState(false);
     const gumStream = useRef(null);
     const recorder = useRef(null);
     const chunks = useRef([]);
     const extension = useRef('');
 
-  useEffect(() => {
-    // Check and set the supported audio format
-    extension.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'webm' : 'ogg';
-  }, []);
+    useEffect(() => {
+        // Check and set the supported audio format
+        extension.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'webm' : 'ogg';
+    }, []);
 
-  const startRecording = () => {
-    console.log("Record button clicked");
-    const constraints = { audio: true };
+    const startRecording = () => {
+        console.log("Record button clicked");
+        const constraints = { audio: true };
 
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-      console.log("getUserMedia() success, stream created, initializing MediaRecorder");
-      gumStream.current = stream;
+        navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+        console.log("getUserMedia() success, stream created, initializing MediaRecorder");
+        gumStream.current = stream;
 
-      const options = {
-        audioBitsPerSecond: 256000,
-        mimeType: 'audio/' + extension.current + ';codecs=opus'
-      };
+        const options = {
+            audioBitsPerSecond: 256000,
+            mimeType: 'audio/' + extension.current + ';codecs=opus'
+        };
 
-      recorder.current = new MediaRecorder(stream, options);
+        recorder.current = new MediaRecorder(stream, options);
 
-      recorder.current.ondataavailable = e => {
-        chunks.current.push(e.data);
-        if (recorder.current.state === 'inactive') {
-          const blob = new Blob(chunks.current, { type: 'audio/' + extension.current });
-          const url = URL.createObjectURL(blob);
-          setAudioURL(url);
-          chunks.current = [];
+        recorder.current.ondataavailable = e => {
+            chunks.current.push(e.data);
+            if (recorder.current.state === 'inactive') {
+            const blob = new Blob(chunks.current, { type: 'audio/' + extension.current });
+            const url = URL.createObjectURL(blob);
+            setAudioURL(url);
+            chunks.current = [];
+            }
+        };
+
+        recorder.current.onerror = function(e) {
+            console.error(e.error);
+        };
+
+        recorder.current.start(1000);
+        setIsRecording(true);
+        }).catch(err => {
+        console.error("Failed to start recording:", err);
+        setIsRecording(false);
+        });
+    };
+
+    const pauseRecording = () => {
+        if (recorder.current.state === "recording") {
+        recorder.current.pause();
+        setIsPaused(true);
+        } else if (recorder.current.state === "paused") {
+        recorder.current.resume();
+        setIsPaused(false);
         }
-      };
+    };
 
-      recorder.current.onerror = function(e) {
-        console.error(e.error);
-      };
+    const stopRecording = () => {
+        if (recorder.current) {
+        recorder.current.stop();
+        }
+        if (gumStream.current) {
+        gumStream.current.getTracks().forEach(track => track.stop());
+        }
+        setIsRecording(false);
+        setIsPaused(false);
+        setIsRecorded(true);
+    };
+    // return (
 
-      recorder.current.start(1000);
-      setIsRecording(true);
-    }).catch(err => {
-      console.error("Failed to start recording:", err);
-      setIsRecording(false);
-    });
-  };
-
-  const pauseRecording = () => {
-    if (recorder.current.state === "recording") {
-      recorder.current.pause();
-      setIsPaused(true);
-    } else if (recorder.current.state === "paused") {
-      recorder.current.resume();
-      setIsPaused(false);
-    }
-  };
-
-  const stopRecording = () => {
-    if (recorder.current) {
-      recorder.current.stop();
-    }
-    if (gumStream.current) {
-      gumStream.current.getTracks().forEach(track => track.stop());
-    }
-    setIsRecording(false);
-    setIsPaused(false);
-  };
-
-  return (
-    <div>
-      <Button variant = 'secondary' className = "mr-5" onClick={addLecture}>Add Lecture</Button>
-      <Button variant = 'secondary' className = "mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button> 
-      <Button variant = 'secondary' className = "mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
-      <Button variant = 'secondary' className = "mr-5" onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</Button>
-      {/* <button onClick={stopRecording} disabled={!isRecording}>Stop Recording</button> */}
-      {/* <button onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</button> */}
-      {/* <audio src={audioURL} controls="controls" />
-      {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
-    </div>
-  );
-};
+    //     <div>
+    //         <Button variant = 'secondary' className = "mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button> 
+    //         <Button variant = 'secondary' className = "mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+    //         <Button variant = 'secondary' className = "mr-5" onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</Button>
+    //         <audio src={audioURL} controls="controls" />
+    //         {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>}
+    //         {/* {<audio src={audioURL} controls="controls" />}
+    //         {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
+    //     </div>
+    // )
+    return (
+        <div>
+            {!isRecorded ? (
+                <>
+                    <Button variant='secondary' className="mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button>
+                    <Button variant='secondary' className="mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+                    <Button variant='secondary' className="mr-5" onClick={pauseRecording} disabled={!isRecording || (isPaused && recorder.current && recorder.current.state !== 'recording')}>{isPaused ? "Resume" : "Pause"}</Button>
+                </>
+            ) : (
+                <>
+                    <audio src={audioURL} controls="controls" />
+                    {/* {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
+                </>
+            )}
+        </div>
+    );
+}
 
 // export {
 //     AudioRecorderButtons
 // }
 
 export {
-    LectureButton
+    LectureButton, LectureRecordingButton
 }
 
 // export function LectureButton() {
