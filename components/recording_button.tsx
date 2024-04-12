@@ -7,80 +7,207 @@ import { Button } from '@/components/ui/button';
 import { AudioRecoder } from './audio-recorder';
 
 
+// interface LectureButtonProps {
+//     addLecture: () => void;
+// }
 
+const LectureButton = ({ addLecture }) => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const [audioURL, setAudioURL] = useState('');
+    const gumStream = useRef(null);
+    const recorder = useRef(null);
+    const chunks = useRef([]);
+    const extension = useRef('');
 
-export default function LectureButton() {
-  const [isClicked, setIsClicked] = useState(false);
-  const [recordedUrl, setRecordedUrl] = useState('');
-  const mediaStream = useRef(null);
-  const mediaRecorder = useRef(null);
-  const chunks = useRef([]);
+  useEffect(() => {
+    // Check and set the supported audio format
+    extension.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'webm' : 'ogg';
+  }, []);
 
-  const handleClick = () => {
-    setIsClicked(!isClicked);
-  };
+  const startRecording = () => {
+    console.log("Record button clicked");
+    const constraints = { audio: true };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStream.current = stream;
-      mediaRecorder.current = new MediaRecorder(stream);
-      mediaRecorder.current.ondataavailable = e => {
-        if (e.data.size > 0) {
-          chunks.current.push(e.data);
+    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+      console.log("getUserMedia() success, stream created, initializing MediaRecorder");
+      gumStream.current = stream;
+
+      const options = {
+        audioBitsPerSecond: 256000,
+        mimeType: 'audio/' + extension.current + ';codecs=opus'
+      };
+
+      recorder.current = new MediaRecorder(stream, options);
+
+      recorder.current.ondataavailable = e => {
+        chunks.current.push(e.data);
+        if (recorder.current.state === 'inactive') {
+          const blob = new Blob(chunks.current, { type: 'audio/' + extension.current });
+          const url = URL.createObjectURL(blob);
+          setAudioURL(url);
+          chunks.current = [];
         }
       };
-      mediaRecorder.current.onstop = () => {
-        const recordedBlob = new Blob(chunks.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(recordedBlob);
-        setRecordedUrl(url);
-        chunks.current = [];
+
+      recorder.current.onerror = function(e) {
+        console.error(e.error);
       };
-      mediaRecorder.current.start();
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
+
+      recorder.current.start(1000);
+      setIsRecording(true);
+    }).catch(err => {
+      console.error("Failed to start recording:", err);
+      setIsRecording(false);
+    });
+  };
+
+  const pauseRecording = () => {
+    if (recorder.current.state === "recording") {
+      recorder.current.pause();
+      setIsPaused(true);
+    } else if (recorder.current.state === "paused") {
+      recorder.current.resume();
+      setIsPaused(false);
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-      mediaRecorder.current.stop();
+    if (recorder.current) {
+      recorder.current.stop();
     }
-    if (mediaStream.current) {
-      mediaStream.current.getTracks().forEach(track => track.stop());
+    if (gumStream.current) {
+      gumStream.current.getTracks().forEach(track => track.stop());
     }
+    setIsRecording(false);
+    setIsPaused(false);
   };
 
-  useEffect(() => {
-    if (isClicked) {
-      startRecording();
-    } else {
-      stopRecording();
-    }
+  return (
+    <div>
+      <Button variant = 'secondary' className = "mr-5" onClick={addLecture}>Add Lecture</Button>
+      <Button variant = 'secondary' className = "mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button> 
+      <Button variant = 'secondary' className = "mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+      <Button variant = 'secondary' className = "mr-5" onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</Button>
+      {/* <button onClick={stopRecording} disabled={!isRecording}>Stop Recording</button> */}
+      {/* <button onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</button> */}
+      {/* <audio src={audioURL} controls="controls" />
+      {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
+    </div>
+  );
+};
 
-    return () => {
-      if (mediaStream.current) {
-        mediaStream.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isClicked]);
+// export {
+//     AudioRecorderButtons
+// }
 
-  if (isClicked) {
-    return (
-      <Button className="w-full h-11 rounded-lg bg-red-600 relative overflow-hidden" onClick={handleClick}>
-        {/* Conditional UI components for recording state */}
-        <span className="relative z-10 font-semibold text-lg">Recording</span>
-      </Button>
-    );
-  } else {
-    return (
-      <Button className="font-semibold text-lg rounded-lg h-11 bg-green-400 text-white px-4 py-2 flex items-center space-x-2" onClick={handleClick}>
-        <PlusIcon className="text-white" />
-        <span>Add new lecture</span>
-      </Button>
-    );
-  }
+export {
+    LectureButton
 }
+
+// export function LectureButton() {
+//     const isClicked = false;
+
+//     const handleClick = () => {
+//         console.log('Button clicked');
+//     };
+
+//     return (
+//         <Button className="font-semibold text-lg rounded-lg h-11 bg-green-400 text-white px-4 py-2 flex items-center space-x-2" onClick={handleClick}>
+//             <PlusIcon className="text-white" />
+//             <span>Add new lecture</span>
+//         </Button>
+//     );
+// }
+
+
+
+// export default function LectureButton() {
+//   const [isClicked, setIsClicked] = useState(false);
+//   const [recordedUrl, setRecordedUrl] = useState('');
+//   const mediaStream = useRef(null);
+//   const mediaRecorder = useRef(null);
+//   const chunks = useRef([]);
+
+//   const handleClick = () => {
+//     setIsClicked(!isClicked);
+//   };
+
+//   const startRecording = async () => {
+//     try {
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+//       mediaStream.current = stream;
+//       mediaRecorder.current = new MediaRecorder(stream);
+//       mediaRecorder.current.ondataavailable = e => {
+//         if (e.data.size > 0) {
+//           chunks.current.push(e.data);
+//         }
+//       };
+//       mediaRecorder.current.onstop = () => {
+//         const recordedBlob = new Blob(chunks.current, { type: 'audio/webm' });
+//         const url = URL.createObjectURL(recordedBlob);
+//         setRecordedUrl(url);
+//         chunks.current = [];
+//       };
+//       mediaRecorder.current.start();
+//     } catch (error) {
+//       console.error('Error accessing microphone:', error);
+//     }
+//   };
+
+//   const stopRecording = () => {
+//     if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+//       mediaRecorder.current.stop();
+//     }
+//     if (mediaStream.current) {
+//       mediaStream.current.getTracks().forEach(track => track.stop());
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (isClicked) {
+//       startRecording();
+//     } else {
+//       stopRecording();
+//     }
+
+//     return () => {
+//       if (mediaStream.current) {
+//         mediaStream.current.getTracks().forEach(track => track.stop());
+//       }
+//     };
+//   }, [isClicked]);
+
+//   if (isClicked) {
+//     return (
+//       <Button className="w-full h-11 rounded-lg bg-red-600 relative overflow-hidden" onClick={handleClick}>
+//         {/* Conditional UI components for recording state */}
+//         <span className="relative z-10 font-semibold text-lg">Recording...</span>
+//       </Button>
+//     );
+//   } else {
+//     return (
+//       <Button className="font-semibold text-lg rounded-lg h-11 bg-green-400 text-white px-4 py-2 flex items-center space-x-2" onClick={handleClick}>
+//         <PlusIcon className="text-white" />
+//         <span>Add new lecture</span>
+//       </Button>
+//     );
+//   }
+// }
+
+// function download() {
+//     const blob = new Blob(recordedChunks, {
+//       type: "video/webm",
+//     });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement("a");
+//     document.body.appendChild(a);
+//     a.style = "display: none";
+//     a.href = url;
+//     a.download = "test.webm";
+//     a.click();
+//     window.URL.revokeObjectURL(url);
+//   }
 
 
 // const LectureButton = () => {
@@ -153,9 +280,9 @@ export default function LectureButton() {
 // }
 
 
-export {
-    LectureButton
-}
+// export {
+//     LectureButton
+// }
 
 function PlusIcon() {
     return (
