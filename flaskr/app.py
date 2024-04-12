@@ -9,6 +9,15 @@ import subprocess
 app = Flask(__name__)
 CORS(app)
 
+# Relevant directories
+audio_dir = "./flaskr/audio/"
+txt_dir = "./flaskr/audio/"
+
+# Load the OpenAI API key from a file
+with open("./flaskr/key.txt", "r") as file:
+    key = file.read().strip()
+
+openai.api_key = key
 
 
 @app.route("/company-names")
@@ -30,17 +39,19 @@ def company_esg(company):
     }
 
 @app.route("/company-esg/<company>")
-def convert_audio(input_file, output_file):
+def convert_audio(input_file):
     """
     Convert an audio file to Opus format using FFmpeg.
     input_file: input audio file (mp3)
     output_file: output audio file (.ogg)
     """
 
+    output_file = audio_dir + input_file.replace(".mp3", ".ogg")
+
     # Define the FFmpeg command as a list of arguments
     command = [
         'ffmpeg',
-        '-i', input_file,   # Input file
+        '-i', audio_dir + input_file,   # Input file
         '-vn',              # No video
         '-map_metadata', '-1',  # Strip metadata
         '-ac', '1',         # Set audio channels to 1 (mono)
@@ -55,14 +66,21 @@ def convert_audio(input_file, output_file):
         print(f"File converted successfully: {output_file}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while converting the file: {e}")
+    
 
 
 @app.route("/company-esg/<company>")
 def transcribe_audio(audio_file):
     
-    response = openai.Audio.transcribe(
+    response = openai.audio.transcriptions.create(
         model="whisper-1",
         file=open(audio_file, "rb")
     )
-    return response['text']
+    response = response.text
 
+    transcription_file = txt_dir + audio_file.replace(".ogg", ".txt")
+
+    with open(transcription_file, "w") as file:
+        file.write(response)
+
+    return response
