@@ -23,35 +23,6 @@ const LectureButton = ({ addLecture }) => {
   );
 };
 
-function FileUpload() {
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [audioURL, setAudioURL] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-
-  const handleFileSubmit = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setUploadStatus('Uploading...');
-      const formData = new FormData();
-      formData.append('file_from_react', file);
-
-      fetch("http://127.0.0.1:5003/get_data", {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => response.json())
-      .then(data => {
-        setUploadStatus('Upload successful!');
-        alert(data.message);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setUploadStatus('Error uploading file.');
-      });
-    }
-};
-};
-
 
 // function LectureRecordingButton() {
 //     const [isRecording, setIsRecording] = useState(false);
@@ -137,59 +108,168 @@ function FileUpload() {
 // };
 
 
+// function FileUpload({audioBlob}) {
+//   const [uploadStatus, setUploadStatus] = useState('');
+//   const [audioURL, setAudioURL] = useState('');
+//   const [isRecording, setIsRecording] = useState(false);
+
+//   const handleFileSubmit = (event) => {
+//     const file = event.target.files[0];
+//     if (file) {
+//       setUploadStatus('Uploading...');
+//       const formData = new FormData();
+//       formData.append('file_from_react', file);
+
+//       fetch("http://127.0.0.1:5003/get_data", {
+//         method: 'POST',
+//         body: formData,
+//       })
+//       .then(response => response.json())
+//       .then(data => {
+//         setUploadStatus('Upload successful!');
+//         alert(data.message);
+//       })
+//       .catch(error => {
+//         console.error('Error:', error);
+//         setUploadStatus('Error uploading file.');
+//       });
+//     }
+// };
+// };
+
+function FileUpload({ audioBlob }) {
+  const [uploadStatus, setUploadStatus] = useState('');
+
+  useEffect(() => {
+    if (audioBlob) {
+      setUploadStatus('Uploading...');
+      const formData = new FormData();
+      formData.append('file_from_react', audioBlob);
+
+      fetch("http://127.0.0.1:5003/upload_audio", {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        setUploadStatus('Upload successful!');
+        // alert(data.message);
+      })
+      .catch(error => {
+        // console.error('Error:', error);
+        setUploadStatus('Error uploading file.');
+      });
+    }
+  }, [audioBlob]);
+
+  // return (
+  //   <div>
+  //     {uploadStatus && <p>{uploadStatus}</p>}
+  //   </div>
+  // );
+};
+
+
 function LectureRecordingButton() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
   const [isRecorded, setIsRecorded] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(false);
 
   const gumStream = useRef(null);
   const recorder = useRef(null);
   const chunks = useRef([]);
 
+  // useEffect(() => {
+  //     // Permission and recording setup
+  //     navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+  //         if (permissionStatus.state === 'denied') {
+  //             // alert('Please enable microphone permissions in your browser settings.');
+  //             return;
+  //         }
+  //         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  //             console.error("Media devices not supported");
+  //             return;
+  //         }
+  //         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+  //             gumStream.current = stream;
+  //             recorder.current = new MediaRecorder(stream);
+  //             recorder.current.ondataavailable = e => chunks.current.push(e.data);
+  //             recorder.current.onstop = async () => {
+  //                 const blob = new Blob(chunks.current, { type: 'audio/webm' });
+  //                 const url = URL.createObjectURL(blob);
+  //                 setAudioURL(url);
+  //                 setIsRecorded(true);
+  //                 chunks.current = [];
+  //             };
+  //         }).catch(err => console.error("Error accessing media devices:", err));
+  //     }).catch(console.error);
+  // }, []);
+
+  // const startRecording = () => {
+  //     console.log("Record button clicked");
+  //     if (recorder.current && gumStream.current) {
+  //         console.log("It should record")
+  //         recorder.current.start();
+  //         setIsRecording(true);
+  //         setIsRecorded(false);
+  //     }
+  // };
+
+  // const stopRecording = () => {
+  //     if (recorder.current) {
+  //         recorder.current.stop();
+  //     }
+  //     if (gumStream.current) {
+  //         gumStream.current.getTracks().forEach(track => track.stop());
+  //     }
+  //     setIsRecording(false);
+  // };
+
   useEffect(() => {
-      // Permission and recording setup
-      navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
-          if (permissionStatus.state === 'denied') {
-              // alert('Please enable microphone permissions in your browser settings.');
-              return;
-          }
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-              console.error("Media devices not supported");
-              return;
-          }
-          navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-              gumStream.current = stream;
-              recorder.current = new MediaRecorder(stream);
-              recorder.current.ondataavailable = e => chunks.current.push(e.data);
-              recorder.current.onstop = async () => {
-                  const blob = new Blob(chunks.current, { type: 'audio/webm' });
-                  const url = URL.createObjectURL(blob);
-                  setAudioURL(url);
-                  setIsRecorded(true);
-                  chunks.current = [];
-              };
-          }).catch(err => console.error("Error accessing media devices:", err));
-      }).catch(console.error);
+    navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+      if (permissionStatus.state === 'denied') {
+        alert('Microphone access denied. Please enable microphone permissions in your browser settings.');
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error("Media devices not supported");
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        gumStream.current = stream;
+        recorder.current = new MediaRecorder(stream);
+        recorder.current.ondataavailable = e => chunks.current.push(e.data);
+        recorder.current.onstop = () => {
+          const blob = new Blob(chunks.current, { type: 'audio/webm' });
+          const filename = `recording-${new Date().toISOString()}.webm`;
+          setAudioBlob(new File([blob], filename, { type: 'audio/webm' }));
+          const url = URL.createObjectURL(blob);
+          setAudioURL(url);
+          setIsRecorded(true);
+          chunks.current = [];
+        };
+      }).catch(err => console.error("Error accessing media devices:", err));
+    }).catch(console.error);
   }, []);
 
   const startRecording = () => {
-      console.log("Record button clicked");
-      if (recorder.current && gumStream.current) {
-          console.log("It should record")
-          recorder.current.start();
-          setIsRecording(true);
-          setIsRecorded(false);
-      }
+    if (recorder.current && gumStream.current) {
+      recorder.current.start();
+      setIsRecording(true);
+      setIsRecorded(false);
+      setAudioBlob(null);  // Reset the blob when starting new recording
+    }
   };
 
   const stopRecording = () => {
-      if (recorder.current) {
-          recorder.current.stop();
-      }
-      if (gumStream.current) {
-          gumStream.current.getTracks().forEach(track => track.stop());
-      }
-      setIsRecording(false);
+    if (recorder.current) {
+      recorder.current.stop();
+    }
+    if (gumStream.current) {
+      gumStream.current.getTracks().forEach(track => track.stop());
+    }
+    setIsRecording(false);
   };
 
   return (
@@ -203,8 +283,9 @@ function LectureRecordingButton() {
               <>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <audio src={audioURL} controls />
+                      <FileUpload audioBlob={audioBlob} />
                       <Button className = 'ml-8' variant='secondary' onClick={() => console.log('Upload functionality to be implemented')}>Upload Additional Files</Button>
-                      {audioURL && <p>Download the recording <a href={audioURL} download={`recording}`}>here</a>.</p>}
+                      {/* {audioURL && <p>Download the recording <a href={audioURL} download={`recording}`}>here</a>.</p>} */}
                   </div>
               </>
           )}

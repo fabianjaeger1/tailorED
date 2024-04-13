@@ -11,8 +11,11 @@ import subprocess
 import logging
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'audio/'  # Define the upload folder
+app.config['UPLOAD_FOLDER'] = 'audio'  # Define the upload folder
 CORS(app)
+
+# Ensure audio folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Relevant directories
 audio_dir = "./flaskr/audio/"
@@ -44,6 +47,19 @@ def get_data():
 def members():
     return jsonify({'members': ['member1', 'member2', 'member3']})
 
+# Method to convert the webm file to mp3
+
+def convert_video_to_audio(video_file_path):
+    # print("called")
+    audio_filename = video_file_path[:-5] + ".mp3"
+    audio_filename = "./audio/" + audio_filename
+    audio_filename = os.path.join('audio', audio_filename)
+    video_file_path = os.path.join('audio', video_file_path)
+    # print(os.lsdir("./audio"))
+    # print(os.getcwd())
+    command = "ffmpeg -i {} -vn -ar 44100 -ac 2 -b:a 192k {}".format(video_file_path, audio_filename)
+    subprocess.call(command, shell=True)
+
 @app.route('/upload_audio', methods=['POST'])
 def upload_audio():
     if 'file_from_react' not in request.files:
@@ -54,7 +70,11 @@ def upload_audio():
         return jsonify({'status': 'No selected file'})
 
     if file:
+        print("Save File")
         filename = secure_filename(file.filename)
+        # file.save("TEST.ogg")        
+        print(filename)
+        convert_video_to_audio(filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return jsonify({'status': 'File uploaded successfully'})
 
@@ -67,7 +87,9 @@ def upload_file():
         return jsonify({'status': 'No selected file'}), 400
     if file:
         # Save the file to the server's filesystem
-        filepath = f"./uploads/{file.filename}"
+        # filepath = f"./uploads/{file.filename}"
+        filepath = f'{file.filename}'
+        print("save file")
         file.save(filepath)
         return jsonify({'status': 'File uploaded successfully'}), 200
     
@@ -92,11 +114,11 @@ def upload_file():
 #         f.write(json_data)
 #     return jsonify(d)
 
-@app.route("/company-names")
-def company_names():
-    df = pd.read_csv('../all_factors.csv')
+# @app.route("/company-names")
+# def company_names():
+#     df = pd.read_csv('../all_factors.csv')
 
-    return list(df['companyLongName'].unique())
+#     return list(df['companyLongName'].unique())
 
 @app.route("/company-esg/<company>")
 def convert_audio(input_file):
