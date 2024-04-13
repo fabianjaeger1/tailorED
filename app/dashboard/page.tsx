@@ -1,19 +1,23 @@
 'use client'
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button"
-// import { Le } from "@/components/recording_button"
 import { LectureButton } from "@/components/recording_button"
-import { TalkButton } from "@/components/talkbutton"
-import { GearIcon } from "@radix-ui/react-icons"
-import { AudioRecorder } from "@/components/audio-recorder"
-import { LectureRecordingButton } from "@/components/recording_button"
-
+import { GearIcon, BarChartIcon } from "@radix-ui/react-icons"
 import { useState } from "react"
-
-
-// might have to change this to async
+import DevelopmentTable from "../studentFeedback/DevelopmentTable";
+import {
+  columnsDataDevelopment,
+  columnsDataCheck,
+  columnsDataColumns,
+  columnsDataComplex,
+} from "../studentFeedback/variables/columnsData";
+import tableDataDevelopment from "../studentFeedback/variables/tableDataDevelopment.json";
+import { Box, SimpleGrid } from "@chakra-ui/react"
+import img1 from '../screen.png'
+import img2 from '../screen3.png'
 export default function Dashboard() {
-  
+  const [showPerformance, setShowPerformance] = useState(false);
   const [lectures, setLectures] = useState([
     {
       date: "April 2nd",
@@ -26,8 +30,17 @@ export default function Dashboard() {
     {
       date: "April 2nd",
       title: "Vectors, Norms, Cross-Product"
-    },
+    }
   ]);
+  const [imageSrc, setImageSrc] = useState(img1); // Remplacez par votre source d'image initiale
+
+  const toggleImage = () => {
+    if (imageSrc === img1) {
+      setImageSrc(img2); // Remplacez par la source de votre seconde image
+    } else {
+      setImageSrc(img1); // Remet l'image initiale
+    }
+  };
 
   // Function to add a new lecture
   const addLecture = () => {
@@ -39,7 +52,8 @@ export default function Dashboard() {
   };
 
   const getKeyPoints = () => {
-    // TODO Get the key points from the lecture
+    // Placeholder for functionality to get key points
+    return "New Lecture Points";
   }
 
   const getCurrentDate = () => {
@@ -47,21 +61,20 @@ export default function Dashboard() {
     const monthNames = ["January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"];
     const day = date.getDate();
-  
+
     const getOrdinalSuffix = (day) => {
       if (day > 3 && day < 21) return 'th';
       switch (day % 10) {
-        case 1:  return "st";
-        case 2:  return "nd";
-        case 3:  return "rd";
+        case 1: return "st";
+        case 2: return "nd";
+        case 3: return "rd";
         default: return "th";
       }
     };
-  
+
     return `${monthNames[date.getMonth()]} ${day}${getOrdinalSuffix(day)}`;
   };
 
-  
   return (
     <div className="min-h-screen bg-white py-5">
       <div className="container mx-auto px-4 ">
@@ -73,7 +86,7 @@ export default function Dashboard() {
                 <Button className="justify-start text-green-600 font-medium text-lg p-4" variant="secondary">
                   Maths 2023
                 </Button>
-                <Button className="justify-start font-medium text-lg p-4"  variant="ghost">
+                <Button className="justify-start font-medium text-lg p-4" variant="ghost">
                   Physics 2023
                 </Button>
               </nav>
@@ -81,52 +94,38 @@ export default function Dashboard() {
           </aside>
           <main className="flex-1">
             <header className="p-4 flex justify-between items-center py-4">
-            <h1 className="text-3xl font-bold text-gray-800">Course Overview</h1>
+              <h1 className="text-3xl font-bold text-gray-800">Course Overview</h1>
               <div className="flex space-x-4">
-                  <Button className="flex items-center space-x-2" variant="secondary"><InfoIcon className="text-gray-700 w-5 mr-2"/>Course Information</Button>
-                  <Button className="flex items-center space-x-2" variant="secondary"><BarChartIcon className="text-gray-700 w-5 mr-2" />Student Performance</Button>
-                  <Button className="flex items-center space-x-2" variant="secondary"><MessageCircleIcon className="text-white-700 w-5 mr-2" />Chat</Button>
-                  <Button className="flex items-center space-x-2" variant="secondary"><GearIcon className="text-white-700 w-5 mr-2" />Settings</Button>
+                <Button onClick={() => setShowPerformance(false)} className="flex items-center space-x-2" variant="secondary"><InfoIcon className="text-gray-700 w-5 mr-2" />Course Information</Button>
+                <Button onClick={() => setShowPerformance(true)} className="flex items-center space-x-2" variant="secondary"><BarChartIcon className="text-gray-700 w-5 mr-2" />Student Performance</Button>
+                <Button onClick={() => setShowPerformance(false)} className="flex items-center space-x-2" variant="secondary"><MessageCircleIcon className="text-white-700 w-5 mr-2" />Chat</Button>
+                <Button onClick={() => setShowPerformance(false)} className="flex items-center space-x-2" variant="secondary"><GearIcon className="text-white-700 w-5 mr-2" />Settings</Button>
               </div>
             </header>
-            <div className="bg-white p-4 rounded-lg ">
-              {/* <Button className="bg-green-500 text-white px-4 py-2 rounded-md flex items-center space-x-2">
-                <PlusIcon className="text-white" />
-                <span>Add new lecture</span>
-              </Button> */}
-              {/* <AudioRecoderButton></AudioRecoderButton> */}
-              {/* <LectureButton></LectureButton> */}
-              <LectureButton addLecture={addLecture}></LectureButton>
-              {/* <TalkButton></TalkButton> */}
-              <div className="mt-6">
-                {lectures.map((lecture, index) => (
-                  <div key={index} className="flex items-center justify-between p-6 rounded-lg bg-gray-50 mb-7">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">{lecture.date}</h3>
-                      <p className="text-gray-600">{lecture.title}</p>
+            <div className="bg-white p-4 rounded-lg">
+              {showPerformance ? (
+                <div onClick={toggleImage} style={{ cursor: 'pointer' }}>
+                  <Image
+                    src={imageSrc} // Chemin relatif ou URL absolue
+                    alt=" de l'image"
+                    width={300}  // Largeur désirée de l'image
+                    height={300} // Hauteur désirée de l'image
+                    layout="responsive" // Cela rend l'image responsive
+                  />
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <LectureButton addLecture={addLecture}></LectureButton>
+                  {lectures.map((lecture, index) => (
+                    <div key={index} className="flex items-center justify-between p-6 rounded-lg bg-gray-50 mb-7">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3">{lecture.date}</h3>
+                        <p className="text-gray-600">{lecture.title}</p>
+                      </div>
                     </div>
-                    <span className="text-gray-400"></span>
-                    <LectureRecordingButton></LectureRecordingButton>
-                  </div>
-                  // <ChevronRightIcon className="text-gray-400" />
-                ))}
-              </div>
-              {/* <div className="mt-6">
-                <div className="flex items-center justify-between p-6 rounded-lg bg-gray-50 mb-7">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">April 2nd</h3>
-                    <p className="text-gray-600">Vectors, Norms, Cross-Product</p>
-                  </div>
-                  <ChevronRightIcon className="text-gray-400" />
+                  ))}
                 </div>
-                <div className="flex items-center justify-between p-6 rounded-lg bg-gray-50">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">March 3rd</h3>
-                    <p className="text-gray-600">Matrix Calculations, Vector Spaces</p>
-                  </div>
-                  <ChevronRightIcon className="text-gray-400" />
-                </div>
-              </div> */}
+              )}
             </div>
           </main>
         </div>
@@ -134,48 +133,6 @@ export default function Dashboard() {
     </div>
   )
 }
-
-function BarChartIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" x2="12" y1="20" y2="10" />
-      <line x1="18" x2="18" y1="20" y2="4" />
-      <line x1="6" x2="6" y1="20" y2="16" />
-    </svg>
-  )
-}
-
-
-function ChevronRightIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  )
-}
-
 
 function InfoIcon(props) {
   return (
@@ -214,27 +171,6 @@ function MessageCircleIcon(props) {
       strokeLinejoin="round"
     >
       <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
-    </svg>
-  )
-}
-
-
-function PlusIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
     </svg>
   )
 }
