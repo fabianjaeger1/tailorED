@@ -20,6 +20,12 @@ CORS(app)
 def test():
     return "Test"
 
+
+@app.route('/', methods=['POST', 'GET'])
+def get_data():
+    request.files["file"].save('./audio.ogg')
+    print("FILE CLOSED")
+
 @app.route('/members', methods=['GET'])
 def members():
     return jsonify({'members': ['member1', 'member2', 'member3']})
