@@ -147,7 +147,7 @@ def transcribe_audio(audio_file):
 
 if __name__ == "__main__":
     # app.run(debug=True, ssl_context=('cert.pem', 'key.pem'), port=5003, host = "127.0.0.1")
-    app.run(debug=True, ssl_context=('adhoc'), port=5003, host = "127.0.0.1")
+    app.run(debug=True, port=5003, host = "127.0.0.1")
     # app.run(debug=True, ssl_context='adhoc', port=5002)
 #     # app.run(debug=True, port=3000, threaded=True)
 #     # app.run(ssl_context='adhoc', port=3000, debug=True, threaded=True)

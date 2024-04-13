@@ -35,7 +35,7 @@ function FileUpload() {
       const formData = new FormData();
       formData.append('file_from_react', file);
 
-      fetch("https://127.0.0.1:5003/get_data", {
+      fetch("http://127.0.0.1:5003/get_data", {
         method: 'POST',
         body: formData,
       })
@@ -204,6 +204,7 @@ function LectureRecordingButton() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <audio src={audioURL} controls />
                       <Button className = 'ml-8' variant='secondary' onClick={() => console.log('Upload functionality to be implemented')}>Upload Additional Files</Button>
+                      {audioURL && <p>Download the recording <a href={audioURL} download={`recording}`}>here</a>.</p>}
                   </div>
               </>
           )}
