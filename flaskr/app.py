@@ -96,7 +96,7 @@ def upload_file():
 def company_names():
     df = pd.read_csv('../all_factors.csv')
 
-    return list(df['companyLongName'].unique()
+    return list(df['companyLongName'].unique())
 
 @app.route("/company-esg/<company>")
 def convert_audio(input_file):
