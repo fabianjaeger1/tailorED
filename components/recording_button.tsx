@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 // import { AudioRecorder, AudioRecoderButton } from './audio-recorder';
 import { AudioRecoder } from './audio-recorder';
+import { AudioPlayer } from './audio-player';
 
 
 // interface LectureButtonProps {
@@ -12,98 +13,410 @@ import { AudioRecoder } from './audio-recorder';
 // }
 
 const LectureButton = ({ addLecture }) => {
-    const [isRecording, setIsRecording] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const [audioURL, setAudioURL] = useState('');
-    const gumStream = useRef(null);
-    const recorder = useRef(null);
-    const chunks = useRef([]);
-    const extension = useRef('');
-
-  useEffect(() => {
-    // Check and set the supported audio format
-    extension.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'webm' : 'ogg';
-  }, []);
-
-  const startRecording = () => {
-    console.log("Record button clicked");
-    const constraints = { audio: true };
-
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-      console.log("getUserMedia() success, stream created, initializing MediaRecorder");
-      gumStream.current = stream;
-
-      const options = {
-        audioBitsPerSecond: 256000,
-        mimeType: 'audio/' + extension.current + ';codecs=opus'
-      };
-
-      recorder.current = new MediaRecorder(stream, options);
-
-      recorder.current.ondataavailable = e => {
-        chunks.current.push(e.data);
-        if (recorder.current.state === 'inactive') {
-          const blob = new Blob(chunks.current, { type: 'audio/' + extension.current });
-          const url = URL.createObjectURL(blob);
-          setAudioURL(url);
-          chunks.current = [];
-        }
-      };
-
-      recorder.current.onerror = function(e) {
-        console.error(e.error);
-      };
-
-      recorder.current.start(1000);
-      setIsRecording(true);
-    }).catch(err => {
-      console.error("Failed to start recording:", err);
-      setIsRecording(false);
-    });
-  };
-
-  const pauseRecording = () => {
-    if (recorder.current.state === "recording") {
-      recorder.current.pause();
-      setIsPaused(true);
-    } else if (recorder.current.state === "paused") {
-      recorder.current.resume();
-      setIsPaused(false);
-    }
-  };
-
-  const stopRecording = () => {
-    if (recorder.current) {
-      recorder.current.stop();
-    }
-    if (gumStream.current) {
-      gumStream.current.getTracks().forEach(track => track.stop());
-    }
-    setIsRecording(false);
-    setIsPaused(false);
-  };
-
   return (
     <div>
       <Button variant = 'secondary' className = "mr-5" onClick={addLecture}>Add Lecture</Button>
-      <Button variant = 'secondary' className = "mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button> 
-      <Button variant = 'secondary' className = "mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
-      <Button variant = 'secondary' className = "mr-5" onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</Button>
       {/* <button onClick={stopRecording} disabled={!isRecording}>Stop Recording</button> */}
       {/* <button onClick={pauseRecording} disabled={!isRecording || !isPaused && recorder.current && recorder.current.state !== 'recording'}>{isPaused ? "Resume" : "Pause"}</button> */}
-      {/* <audio src={audioURL} controls="controls" />
-      {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
+
     </div>
   );
 };
+
+
+const LectureRecordingButton = () => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const [audioURL, setAudioURL] = useState('');
+    const [isRecorded, setIsRecorded] = useState(false);
+    const gumStream = useRef(null);
+    const recorder = useRef(null);
+    const chunks = useRef([]);
+    useEffect(() => {
+      // First, check for permissions
+      navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+          console.log('Microphone permission status:', permissionStatus.state);
+          if (permissionStatus.state === 'denied') {
+              alert('Please enable microphone permissions in your browser settings.');
+              return; // Stop further execution if permission is denied
+          }
+  
+          // Check if media devices are supported
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              console.error("Media devices not supported");
+              return;
+          }
+  
+          // Attempt to get the media stream
+          navigator.mediaDevices.getUserMedia({ audio: true })
+              .then(stream => {
+                  gumStream.current = stream;
+                  recorder.current = new MediaRecorder(stream);
+                  recorder.current.ondataavailable = e => chunks.current.push(e.data);
+                  recorder.current.onstop = async () => {
+                      const blob = new Blob(chunks.current, { type: 'audio/webm' });
+                      const url = URL.createObjectURL(blob);
+                      setAudioURL(url);
+                      setIsRecorded(true);
+                      chunks.current = []; // Clear the chunks array
+                  };
+              })
+              .catch(err => console.error("Error accessing media devices:", err));
+      }).catch(console.error);
+  }, []); // Added the dependency array here
+
+    const startRecording = () => {
+        if (recorder.current && gumStream.current) {
+            recorder.current.start();
+            setIsRecording(true);
+            setIsPaused(false);
+            setIsRecorded(false);
+        }
+    };
+
+    // const pauseRecording = () => {
+    //     if (recorder.current && recorder.current.state === "recording") {
+    //         recorder.current.pause();
+    //         setIsPaused(true);
+    //     } else if (recorder.current && recorder.current.state === "paused") {
+    //         recorder.current.resume();
+    //         setIsPaused(false);
+    //     }
+    // };
+
+    function FileUpload() {
+      const [uploadStatus, setUploadStatus] = useState('');
+      const [audioURL, setAudioURL] = useState('');
+      const [isRecording, setIsRecording] = useState(false);
+    
+      const handleFileSubmit = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          setUploadStatus('Uploading...');
+          const formData = new FormData();
+          formData.append('file_from_react', file);
+    
+          fetch("https://127.0.0.1:5003/get_data", {
+            method: 'POST',
+            body: formData,
+          })
+          .then(response => response.json())
+          .then(data => {
+            setUploadStatus('Upload successful!');
+            alert(data.message);
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            setUploadStatus('Error uploading file.');
+          });
+        }
+      };
+
+    const stopRecording = () => {
+        if (recorder.current) {
+            recorder.current.stop();
+        }
+        if (gumStream.current) {
+            gumStream.current.getTracks().forEach(track => track.stop());
+        }
+        setIsRecording(false);
+        setIsPaused(false);
+    };
+
+    return (
+        <div>
+            {!isRecorded ? (
+                <>
+                  <Button variant='secondary' className="mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button>
+                  <Button variant='secondary' className="mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+                    {/* <Button variant='secondary' onClick={startRecording} disabled={isRecording}>Start Recording</Button>
+                    <Button variant='secondary' onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+                    <Button variant='secondary' onClick={pauseRecording} disabled={!isRecording || isPaused}>{isPaused ? "Resume" : "Pause"}</Button> */}
+                </>
+            ) : (
+                <>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <audio src={audioURL} controls />
+                    <Button variant='secondary' onClick={() => console.log('Upload functionality to be implemented')}>Upload Additional Files</Button>
+                </div>
+                </>
+            )}
+        </div>
+    );
+};
+};
+
+export {
+  LectureButton, LectureRecordingButton
+}
+
+
+// export {
+//   LectureRecordingButton
+// }
+// export { 
+//   LectureRecordingButton
+// }
+
+
+
+
+// const LectureRecordingButton = () => {
+//     // const [isRecording, setIsRecording] = useState(false);
+//     // const [isPaused, setIsPaused] = useState(false);
+//     // const [audioURL, setAudioURL] = useState('');
+//     // const [isRecorded, setIsRecorded] = useState(false);
+//     // const gumStream = useRef(null);
+//     // const [title, setTitle] = useState('Untitled');
+//     // const recorder = useRef(null);
+//     // const chunks = useRef([]);
+//     // const extension = useRef('');
+
+//     const [isRecording, setIsRecording] = useState(false);
+//     const [isPaused, setIsPaused] = useState(false);
+//     const [audioURL, setAudioURL] = useState('');
+//     const [isRecorded, setIsRecorded] = useState(false);
+//     const [title, setTitle] = useState('Untitled');
+//     const gumStream = useRef(null);
+//     const recorder = useRef(null);
+//     const chunks = useRef([]);
+
+//     useEffect(() => {
+//         // Assuming MediaRecorder is supported in the browser
+//         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+//             gumStream.current = stream;
+//             const mimeType = 'audio/webm; codecs=opus'; // Adjust this based on support checks if needed
+//             recorder.current = new MediaRecorder(stream, { mimeType });
+//             recorder.current.ondataavailable = e => chunks.current.push(e.data);
+//             recorder.current.onstop = async () => {
+//                 const blob = new Blob(chunks.current, { type: mimeType });
+//                 const url = URL.createObjectURL(blob);
+//                 setAudioURL(url);
+//                 setIsRecorded(true);
+//                 chunks.current = [];
+//                 // await uploadAudio(blob);  // Automatically upload after recording stops
+//                 await onFileUpload(blob);
+//             };
+//         }).catch(err => console.error("Error accessing media devices:", err));
+//     }, []);
+
+//     const startRecording = () => {
+//       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+//         alert('Media devices not supported by this browser. Please try a different browser.');
+//         return;
+//       }
+//       navigator.mediaDevices.getUserMedia({ audio: true })
+//         .then(stream => {
+//             mediaRecorder = new MediaRecorder(stream);
+//             mediaRecorder.start();
+//             // Additional code to handle recording
+//         })
+//         .catch(err => {
+//             console.error('Error accessing media devices:', err);
+//             alert('Failed to access microphone. Please ensure the microphone is available and permissions are granted.');
+//         });
+//         // recorder.current.start();
+//         setIsRecording(true);
+//         setIsPaused(false);
+//         setIsRecorded(false);
+//     };
+
+
+//     const pauseRecording = () => {
+//         if (recorder.current.state === "recording") {
+//         recorder.current.pause();
+//         setIsPaused(true);
+//         } else if (recorder.current.state === "paused") {
+//         recorder.current.resume();
+//         setIsPaused(false);
+//         }
+//     };
+
+//     const stopRecording = () => {
+//         if (recorder.current) {
+//         recorder.current.stop();
+//         }
+//         if (gumStream.current) {
+//         gumStream.current.getTracks().forEach(track => track.stop());
+//         }
+//         setIsRecording(false);
+//         setIsPaused(false);
+//         setIsRecorded(true);
+//     };
+
+//     function FileUpload() {
+//       const [uploadStatus, setUploadStatus] = useState('');
+//       const [audioURL, setAudioURL] = useState('');
+//       const [isRecording, setIsRecording] = useState(false);
+    
+//       const handleFileSubmit = (event) => {
+//         const file = event.target.files[0];
+//         if (file) {
+//           setUploadStatus('Uploading...');
+//           const formData = new FormData();
+//           formData.append('file_from_react', file);
+    
+//           fetch("https://127.0.0.1:5003/get_data", {
+//             method: 'POST',
+//             body: formData,
+//           })
+//           .then(response => response.json())
+//           .then(data => {
+//             setUploadStatus('Upload successful!');
+//             alert(data.message);
+//           })
+//           .catch(error => {
+//             console.error('Error:', error);
+//             setUploadStatus('Error uploading file.');
+//           });
+//         }
+//       };
+    
+//       return (
+//         <div>
+//           <input type="file" onChange={handleFileSubmit} accept="audio/*" />
+//           {uploadStatus && <p>{uploadStatus}</p>}
+//           {audioURL && (
+//             <div>
+//               <audio src={audioURL} controls />
+//               <Button onClick={() => console.log('Upload functionality to be implemented')}>Upload</Button>
+//             </div>
+//           )}
+//         </div>
+//       );
+//     }
+//     return (
+//         <div>
+//             {!isRecorded ? (
+//                 <>
+//                     <Button variant='secondary' className="mr-5" onClick={startRecording} disabled={isRecording}>Start Recording</Button>
+//                     <Button variant='secondary' className="mr-5" onClick={stopRecording} disabled={!isRecording}>Stop Recording</Button>
+//                     {/* <Button variant='secondary' className="mr-5" onClick={pauseRecording} disabled={!isRecording || (isPaused && recorder.current && recorder.current.state !== 'recording')}>{isPaused ? "Resume" : "Pause"}</Button> */}
+//                 </>
+//             ) : (
+//                 <> 
+//                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+//                     <div className='ml-10'><audio src={audioURL} controls="controls" /></div>
+//                     {/* <button onClick={() => uploadAudio(new Blob(chunks.current))}>Upload Recording</button> */}
+//                     {/* <AutoDownloadAudio audioURL={audioURL} title={Date().toLocaleString()}/> */}
+//                     {/* <AudioPlayer src={audioURL} control="controls"></AudioPlayer> */}
+//                     {/* {audioURL && <p>Download the recording <a href={audioURL} download={`recording.${extension.current}`}>here</a>.</p>} */}
+//                     <Button className="ml-10 round-full" variant='secondary'>Upload Additional Files</Button>
+//                 </div> 
+//                 <FileUpload></FileUpload>
+//                 </>
+//             )}
+//         </div>
+//     );
+// }
+
+
+
+    // const stopRecording = () => {
+    //     recorder.current.stop();
+    //     gumStream.current.getTracks().forEach(track => track.stop());
+    //     setIsRecording(false);
+    //     setIsPaused(false);
+    // };
+
+    // const pauseRecording = () => {
+    //     if (recorder.current.state === "recording") {
+    //         recorder.current.pause();
+    //         setIsPaused(true);
+    //     } else if (recorder.current.state === "paused") {
+    //         recorder.current.resume();
+    //         setIsPaused(false);
+    //     }
+    // };
+
+    // const uploadAudio = async (blob) => {
+    //     const data = new FormData();
+    //     data.append('file_from_react', blob, `${title}.webm`);
+    //     const response = await fetch('https://127.0.0.1:3002/upload_audio', {
+    //         method: 'POST',
+    //         body: data,
+    //     });
+        // try {
+        //     const response = await fetch('https://127.0.0.1:3002/upload_audio', {
+        //         method: 'POST',
+        //         body: data,
+        //     });
+        //     if (!response.ok) {
+        //         throw new Error(`HTTP error! status: ${response.status}`);
+        //     }
+    
+        //     const result = await response.json(); // Assuming server sends back JSON
+        //     alert(result.status);
+        // } catch (error) {
+        //     console.error('Error uploading file:', error);
+        // }
+    // };
+
 
 // export {
 //     AudioRecorderButtons
 // }
 
-export {
-    LectureButton
-}
+
+
+    // function AutoDownloadAudio({ audioURL, title }) {
+    //     useEffect(() => {
+    //         const link = document.createElement('a');
+    //         link.href = audioURL;
+    //         // link.download = `${title}.mp3`; // Specify the filename
+    //         document.body.appendChild(link);
+    //         link.click();
+    //         document.body.removeChild(link);
+    //     }, [audioURL, title]); // Depend on audioURL to ensure the effect runs only when the URL changes
+    
+    //     return (
+    //         <div>
+    //             <audio src={audioURL} controls="controls" />
+    //         </div>
+    //     );
+    // }
+
+    // useEffect(() => {
+    //     // Check and set the supported audio format
+    //     extension.current = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'webm' : 'ogg';
+    // }, []);
+
+    // const startRecording = () => {
+    //     console.log("Record button clicked");
+    //     const constraints = { audio: true };
+
+    //     navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+    //     console.log("getUserMedia() success, stream created, initializing MediaRecorder");
+    //     gumStream.current = stream;
+
+    //     const options = {
+    //         audioBitsPerSecond: 256000,
+    //         mimeType: 'audio/' + extension.current + ';codecs=opus'
+    //     };
+
+    //     recorder.current = new MediaRecorder(stream, options);
+
+    //     recorder.current.ondataavailable = e => {
+    //         chunks.current.push(e.data);
+    //         if (recorder.current.state === 'inactive') {
+    //         const blob = new Blob(chunks.current, { type: 'audio/' + extension.current });
+    //         const url = URL.createObjectURL(blob);
+    //         setAudioURL(url);
+    //         chunks.current = [];
+    //         }
+    //     };
+
+    //     recorder.current.onerror = function(e) {
+    //         console.error(e.error);
+    //     };
+
+    //     recorder.current.start(1000);
+    //     setIsRecording(true);
+    //     }).catch(err => {
+    //     console.error("Failed to start recording:", err);
+    //     setIsRecording(false);
+    //     });
+    // };
 
 // export function LectureButton() {
 //     const isClicked = false;
