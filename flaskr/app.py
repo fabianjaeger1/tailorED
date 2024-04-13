@@ -5,6 +5,7 @@ import urllib.parse
 
 import openai
 import subprocess
+import logging
 
 app = Flask(__name__)
 CORS(app)
