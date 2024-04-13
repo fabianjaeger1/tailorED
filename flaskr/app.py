@@ -19,7 +19,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Relevant directories
 audio_dir = "./flaskr/audio/"
-txt_dir = "./flaskr/audio/"
+# txt_dir = "./flaskr/audio/"
+txt_dir = "./txt_dir"
+
 
 # Load the OpenAI API key from a file
 with open("./flaskr/key.txt", "r") as file:
@@ -52,7 +54,7 @@ def members():
 def convert_video_to_audio(video_file_path):
     # print("called")
     audio_filename = video_file_path[:-5] + ".mp3"
-    audio_filename = "./audio/" + audio_filename
+    # audio_filename = "./audio/" + audio_filename
     audio_filename = os.path.join('audio', audio_filename)
     video_file_path = os.path.join('audio', video_file_path)
     # print(os.lsdir("./audio"))
@@ -74,8 +76,10 @@ def upload_audio():
         filename = secure_filename(file.filename)
         # file.save("TEST.ogg")        
         print(filename)
-        convert_video_to_audio(filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        convert_video_to_audio(filename)
+        convert_audio(filename)
+        transcribe_audio(filename.replace(".webm", ".mp3"))
         return jsonify({'status': 'File uploaded successfully'})
 
 @app.route('/upload_file', methods=["POST"])
@@ -120,20 +124,24 @@ def upload_file():
 
 #     return list(df['companyLongName'].unique())
 
-@app.route("/company-esg/<company>")
+@app.route("/convert-audio/<input_file>")
 def convert_audio(input_file):
     """
     Convert an audio file to Opus format using FFmpeg.
     input_file: input audio file (mp3)
     output_file: output audio file (.ogg)
     """
-
-    output_file = audio_dir + input_file.replace(".mp3", ".ogg")
+    input_file = os.path.join("audio", input_file.replace(".webm", ".mp3"))
+    output_file = input_file.replace(".mp3", ".ogg")
+    # output_file = input_file.replace(".mp3", ".ogg")
+    print("Input file when converting audio to ogg: ", input_file)
+    print("Output file when converting audio to ogg: ", output_file)
+    # output_file = input_file.replace(".mp3", ".ogg")
 
     # Define the FFmpeg command as a list of arguments
     command = [
         'ffmpeg',
-        '-i', audio_dir + input_file,   # Input file
+        '-i', input_file,   # Input file
         '-vn',              # No video
         '-map_metadata', '-1',  # Strip metadata
         '-ac', '1',         # Set audio channels to 1 (mono)
@@ -151,7 +159,7 @@ def convert_audio(input_file):
     
 
 
-@app.route("/company-esg/<company>")
+@app.route("/transcribe-audio/<audio_file>")
 def transcribe_audio(audio_file):
     
     response = openai.audio.transcriptions.create(
